@@ -27,7 +27,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: "20"
+          node-version: "22"
       - name: Install dependencies
         working-directory: ./gateway
         run: npm install
@@ -41,7 +41,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: "20"
+          node-version: "22"
       - name: Install dependencies
         working-directory: ./frontend
         run: npm install
@@ -57,5 +57,11 @@ jobs:
     needs: [backend-tests, gateway-tests, frontend-build]
     steps:
       - uses: actions/checkout@v4
-      - name: Build all images
-        run: docker compose build
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+      - name: Build Backend Docker Image
+        run: docker build -t intelliops-backend:latest ./backend
+      - name: Build Gateway Docker Image
+        run: docker build -t intelliops-gateway:latest ./gateway
+      - name: Build Frontend Docker Image
+        run: docker build -t intelliops-frontend:latest ./frontend
