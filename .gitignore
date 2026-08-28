@@ -1,0 +1,26 @@
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+*.egg-info/
+
+# Node
+node_modules/
+.next/
+npm-debug.log*
+
+# Env files (never commit real secrets)
+.env
+.env.local
+*/.env
+!*.env.example
+
+# OS / editor
+.DS_Store
+.vscode/
+.idea/
+
+# Generated gRPC artifacts are checked in on purpose in this project
+# (they're small and reviewers/interviewers benefit from seeing them),
+# but in a larger codebase you'd typically regenerate them in CI instead.

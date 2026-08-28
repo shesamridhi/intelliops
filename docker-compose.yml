@@ -1,0 +1,79 @@
+version: "3.9"
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: intelliops
+      POSTGRES_PASSWORD: intelliops
+      POSTGRES_DB: intelliops
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U intelliops"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  grpc_service:
+    build: ./grpc_service
+    ports:
+      - "50051:50051"
+
+  backend:
+    build: ./backend
+    environment:
+      DATABASE_URL: postgresql://intelliops:intelliops@postgres:5432/intelliops
+      REDIS_URL: redis://redis:6379/0
+      JWT_SECRET_KEY: ${JWT_SECRET_KEY:-CHANGE_ME_IN_PRODUCTION_USE_ENV_VAR}
+      LLM_PROVIDER: ${LLM_PROVIDER:-fallback}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      GRPC_NOTIFICATION_HOST: grpc_service
+      GRPC_NOTIFICATION_PORT: 50051
+    ports:
+      - "8000:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  gateway:
+    build: ./gateway
+    environment:
+      PORT: 4000
+      BACKEND_URL: http://backend:8000
+      JWT_SECRET_KEY: ${JWT_SECRET_KEY:-CHANGE_ME_IN_PRODUCTION_USE_ENV_VAR}
+      GRPC_NOTIFICATION_HOST: grpc_service
+      GRPC_NOTIFICATION_PORT: 50051
+    ports:
+      - "4000:4000"
+    depends_on:
+      - backend
+      - grpc_service
+
+  frontend:
+    build: ./frontend
+    environment:
+      NEXT_PUBLIC_GATEWAY_URL: http://localhost:4000
+      GATEWAY_URL_INTERNAL: http://gateway:4000
+    ports:
+      - "3000:3000"
+    depends_on:
+      - gateway
+
+volumes:
+  pgdata:
